@@ -23,8 +23,11 @@ int fresh_suffix_counter = 0;
 int 
 seed ()
 {
-	srand (time (0));
-	return 0;
+        if (args_info.rand_seed_given)
+                srand (args_info.rand_seed_arg);
+        else
+                srand (time (0));
+        return 0;
 }
 
 // Return a ranom int which hasnt been returned before

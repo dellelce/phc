@@ -144,6 +144,7 @@ void quick_sha1(const char * input, int size, char * output) {
 	}
 }
 
+// TODO: This should be pseudo-random, SHA1 could be bruteforced for short variables
 std::string hash_variable(std::string input) {
 	char out[20];
 	quick_sha1(input.c_str(),input.size(),out);
@@ -159,16 +160,60 @@ using namespace AST;
 
 class Var_Rename : public Visitor {
 public:
-	Var_Rename() {}
+	Var_Rename() {
+		fn_scope fs;
+		fs.fname = "_";
+		fstack.push_back(fs); // No fn, main scope
+	}
 	
 	void children_variable_name(VARIABLE_NAME* in) {
 		// DO RENAMING STUFF
+		fn_scope fs = fstack[0];
 		std::string vname = *(dynamic_cast<VARIABLE_NAME*>(in))->value;
-		(dynamic_cast<VARIABLE_NAME*>(in))->value = new String(hash_variable(vname));
+
+		// Check if the variable is a formal parameter of a function
+		bool ok = false;
+		for (unsigned int j = 0; j < fs.formal_params.size(); j++)
+			if (fs.formal_params[j] == vname) {
+				ok = true;
+				break;
+			}
+
+		if (ok) {
+			(dynamic_cast<VARIABLE_NAME*>(in))->value = new String(hash_variable(vname));
+		}
 		
 		// Send to parent
 		Visitor::children_variable_name(in);
 	}
+
+	// Rename formal parameters list
+	void children_method(Method* in) {
+		fn_scope fs;
+
+		// Add the formal parameter list to a list of renamable variables
+		List<Formal_parameter*> plist = *in->signature->formal_parameters;
+		fs.fname = *in->signature->method_name->value;
+		for (unsigned int i = 0; i < plist.size(); i++) {
+			fs.formal_params.push_back(*plist.at(i)->var->variable_name->value);
+		}
+
+		// Push fn name to fstack
+		fstack.push_back(fs);
+
+		Visitor::children_method(in);
+
+		// Pop fn name
+		fstack.pop_back();
+	}
+
+protected:
+	struct fn_scope {
+		std::string fname;
+		std::vector <std::string> formal_params;
+		std::vector <std::string> local_vars;
+	};
+	std::vector <fn_scope> fstack;
 };
 
 extern "C" void load (Pass_manager* pm, Plugin_pass* pass) {

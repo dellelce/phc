@@ -681,6 +681,10 @@ nobase_pkglib_LTLIBRARIES += plugins/tools/crypt_string.la
 plugins_tools_crypt_string_la_SOURCES = plugins/tools/crypt_string.cpp
 plugins_tools_crypt_string_la_LDFLAGS = ${PLUGIN_LDFLAGS}
 
+nobase_pkglib_LTLIBRARIES += plugins/tools/var_rename.la
+plugins_tools_var_rename_la_SOURCES = plugins/tools/var_rename.cpp
+plugins_tools_var_rename_la_LDFLAGS = ${PLUGIN_LDFLAGS}
+
 nobase_pkglib_LTLIBRARIES += plugins/tutorials/Comment_ifs.la
 plugins_tutorials_Comment_ifs_la_SOURCES = plugins/tutorials/Comment_ifs.cpp
 plugins_tutorials_Comment_ifs_la_LDFLAGS = ${PLUGIN_LDFLAGS}
