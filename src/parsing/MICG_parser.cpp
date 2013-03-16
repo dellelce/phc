@@ -16,10 +16,12 @@
 #define BOOST_SPIRIT_DEBUG_FLAGS BOOST_SPIRIT_DEBUG_FLAGS_NODES
 
 #include <boost/lexical_cast.hpp>
-#include <boost/spirit.hpp>
-#include <boost/spirit/iterator/position_iterator.hpp>
-#include <boost/spirit/tree/ast.hpp>
-#include <boost/spirit/tree/parse_tree.hpp>
+#include <boost/spirit/include/classic.hpp>
+#include <boost/spirit/include/classic_position_iterator.hpp>
+#include <boost/spirit/include/classic_ast.hpp>
+#include <boost/spirit/include/classic_parse_tree.hpp>
+#include <boost/spirit/include/classic_grammar.hpp>
+#include <boost/spirit/include/qi_grammar.hpp>
 
 #include <iostream>
 
@@ -32,6 +34,7 @@
 
 using namespace std;
 using namespace boost::spirit;
+using namespace boost::spirit::classic;
 using namespace boost;
 using namespace MICG;
 
@@ -268,7 +271,7 @@ typedef tree_match_t::tree_iterator tree_iter_t;
 
 Object* create_micg_node (tree_iter_t tree);
 
-Object_list* create_micg_list (container trees)
+Object_list* create_micg_list (tree_match_t::container_t trees)
 {
 	Object_list* result = new Object_list;
 	for (tree_iter_t tree = trees.begin (); tree != trees.end (); tree++)

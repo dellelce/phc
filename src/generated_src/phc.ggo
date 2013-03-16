@@ -5,6 +5,7 @@ option "verbose" v "Verbose output" flag off
 option "compile" c "Compile" flag off
 option "pretty-print" - "Pretty print input according to the Zend style guidelines" flag off 
 option "obfuscate" - "Obfuscate input" flag off
+option "rand-seed" - "Random seed for obfuscation" int optional
 option "run" - "Run the specified plugin (may be specified multiple times)" string optional multiple
 option "r-option" - "Pass option to a plugin (specify multiple flags in the same order as multiple plugins - 1 option only per plugin)" string optional multiple
 option "define" d "Define ini entry (only affects -c and --include)" string optional multiple
@@ -16,6 +17,8 @@ option "no-xml-validation" - "Toggle XML validation"  flag on hidden
 option "include" - "Parse included or required files at compile-time" flag off
 option "include-harder" - "Try harder to find included files, possibly slightly breaking some of PHP's rules" flag off
 option "include-regexp" - "Use regular expressions to find include files" dependon="include" flag off
+option "include-filter" - "Only include the files matching the regular expression" dependon="include" string optional multiple
+option "include-filter-out" - "Do not include the files matching the regular expression" dependon="include" string optional multiple
 option "include-name" - "Try even harder to find include files, searching the basename of the include argument." dependon="include" flag off
 option "include-searchdir" - "Search regular expressions starting from the search directory" string typestr="DIRECTORY" optional
 

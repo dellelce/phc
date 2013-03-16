@@ -372,6 +372,9 @@ get_dirname (String* filename)
 	return dir;
 }
 
+String*
+get_basename (String* filename);
+
 String_list*
 get_search_directories (String* filename, Node* in)
 {
@@ -438,6 +441,37 @@ Process_includes::pre_eval_expr(Eval_expr* in, Statement_list* out)
 
 	String* full_path = search_file (filename, get_search_directories (filename, in));
 
+	// Check if the file is in the filter list
+	if (pm->args_info->include_filter_given) {
+		String * basename = get_basename (full_path);
+		bool found = false;
+		for (unsigned int i = 0; i < pm->args_info->include_filter_given and not found; i++) {
+			if (std::string(pm->args_info->include_filter_arg[i]) == *basename)
+				found = true;
+		}
+		// Do not include the file if it's not in the filter list
+		if (not found) {
+			phc_warning("File %s will not be included as it does not match any filter", filename->c_str());
+			out->push_back (in);
+			return;
+		}
+	}
+	
+	// Check if the file is in the filter-out list
+	if (pm->args_info->include_filter_out_given) {
+		String * basename = get_basename (full_path);
+		bool found = false;
+		for (unsigned int i = 0; i < pm->args_info->include_filter_out_given and not found; i++) {
+			if (std::string(pm->args_info->include_filter_out_arg[i]) == *basename)
+				found = true;
+		}
+		// Do not include the file if it's in the filter-out list
+		if (found) {
+			phc_warning("File %s will not be included as it's included in the filter-out list", filename->c_str());
+			out->push_back (in);
+			return;
+		}
+	}
 
 	// Script could not be found or not be parsed; leave the include in
 	if (full_path == NULL)
