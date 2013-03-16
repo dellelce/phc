@@ -677,6 +677,10 @@ nobase_pkglib_LTLIBRARIES += plugins/tools/test_ssi.la
 plugins_tools_test_ssi_la_SOURCES = plugins/tools/test_ssi.cpp
 plugins_tools_test_ssi_la_LDFLAGS = ${PLUGIN_LDFLAGS}
 
+nobase_pkglib_LTLIBRARIES += plugins/tools/crypt_string.la
+plugins_tools_crypt_string_la_SOURCES = plugins/tools/crypt_string.cpp
+plugins_tools_crypt_string_la_LDFLAGS = ${PLUGIN_LDFLAGS}
+
 nobase_pkglib_LTLIBRARIES += plugins/tutorials/Comment_ifs.la
 plugins_tutorials_Comment_ifs_la_SOURCES = plugins/tutorials/Comment_ifs.cpp
 plugins_tutorials_Comment_ifs_la_LDFLAGS = ${PLUGIN_LDFLAGS}

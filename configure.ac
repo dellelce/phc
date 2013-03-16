@@ -24,6 +24,7 @@ AM_MAINTAINER_MODE
 dnl checks for programs
 AC_PROG_CC
 AC_PROG_CXX
+AM_PROG_AR
 
 dnl Configure libtool and libltdl
 LT_INIT([dlopen])
