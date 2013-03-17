@@ -10,8 +10,11 @@
 #include "AST_visitor.h"
 #include "process_ir/General.h"
 #include <iostream>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
+
+std::string sddname;
 
 unsigned int rndgen(unsigned int prev) {
 	return 69069*prev+1234567;
@@ -19,7 +22,7 @@ unsigned int rndgen(unsigned int prev) {
 
 std::string crypt_string (std::string in, unsigned int code) {
 	std::string out;
-	for (int i = 0; i < in.size(); i++) {
+	for (unsigned int i = 0; i < in.size(); i++) {
 		code = rndgen(code);
 
 		int num = *(unsigned char*)&in[i];
@@ -35,8 +38,6 @@ std::string crypt_string (std::string in, unsigned int code) {
 using namespace MIR;
 
 class Crypt_Strings : public Visitor {
-private:
-	AST::PHP_script * auxfuncts;
 public:
 	Crypt_Strings() {}
 	
@@ -56,7 +57,7 @@ public:
 			params->push_back(new Actual_parameter(false,str1));
 			params->push_back(new Actual_parameter(false,int2));
 			// Create method reference
-			METHOD_NAME * method = new METHOD_NAME(new String("sdd"));
+			METHOD_NAME * method = new METHOD_NAME(new String(sddname.c_str()));
 			// Create the call
 			Method_invocation * call = new Method_invocation(NULL,method,params);
 			
@@ -75,25 +76,29 @@ extern "C" void load (Pass_manager* pm, Plugin_pass* pass) {
 // Be careful or the function will become recursive!
 const char decode_function[] = 
 	"<?php \n \
-	function sdd($a,$b) { \
-		$out = ''; \
-		for ($i = 0; $i < strlen($a); $i+=2) { \
-			$b = 69069*$b+1234567; \
-			$b &= 0xffffffff; \
-			$lo = ord($a[$i])-97; \
-			$hi = ord($a[$i+1])-97; \
-			$num = $lo + $hi*16;  \
-			$num = ($num ^ $b) & 255; \
-			$out .= chr($num); \
-		} \
-		return $out; \
-	}  \
-	\n ?> \
-	";
+		function fn_placeholder($a,$b) { \
+			$out = ''; \
+			for ($i = 0; $i < strlen($a); $i+=2) { \
+				$b = 69069*$b+1234567; \
+				$b &= 0xffffffff; \
+				$lo = ord($a[$i])-97; \
+				$hi = ord($a[$i+1])-97; \
+				$num = $lo + $hi*16;  \
+				$num = ($num ^ $b) & 255; \
+				$out .= chr($num); \
+			} \
+			return $out; \
+		}  \
+	\n ?>";
 
 extern "C" void run_ast (AST::PHP_script* in, Pass_manager* pm, String* option) {
 	// Add function
-	AST::PHP_script * script = parse_code (new String(decode_function), new String("decodefunction.php"), 1);
+	std::string fncode(decode_function);
+	char sddname_[1024]; sprintf(sddname_,"sdd%d",rand()+in->statements->size());
+	sddname = std::string(sddname_);
+	fncode = fncode.replace(fncode.find("fn_placeholder"),strlen("fn_placeholder"),sddname);
+
+	AST::PHP_script * script = parse_code (new String(fncode.c_str()), new String("decodefunction.php"), 1);
 	assert(script);
 	pm->run_until (s("ast"), script);
 

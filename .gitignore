@@ -1,0 +1,11 @@
+# Ignore binaries
+*.o
+*.lo
+*.la
+**/.libs/*
+**/.deps/*
+.libs/*
+.deps/*
+config.log
+config.h
+Makefile

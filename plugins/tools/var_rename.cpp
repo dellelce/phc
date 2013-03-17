@@ -8,6 +8,25 @@
  *              so that it renames the variables in a deterministic way (controlled by seed)
  */
 
+/**
+ * Safe rules for variable renaming
+ *
+ * For each scope:
+ *  Rename variables which are formal parameters for a function
+ *  Rename variables which are first used in the left part of an assignment
+ * 
+ * The main restriction is file inclusion. That's why we cannot rename all
+ * the variables. The two main problems are:
+ *  - Variables defined in an included file
+ *    + Solution: Do not rename variables which are first used in the right
+ *      part of an assignment, only rename if they are first used in the left part.
+ *  - Variables used in an included file:
+ *    + Solution: We can decide not to rename variables if there's an inclusion after
+ *      their first assignment. This is difficult to model, as the inclusion occurs dinamically
+ *      with the code flow.
+ *
+ */
+
 #include "pass_manager/Plugin_pass.h"
 #include "AST_visitor.h"
 #include "process_ir/General.h"
@@ -149,7 +168,7 @@ std::string hash_variable(std::string input) {
 	char out[20];
 	quick_sha1(input.c_str(),input.size(),out);
 	std::string output;
-	for (int i = 0; i < 20; i++) {
+	for (int i = 0; i < 5; i++) {
 		output += ('a'+(out[i]&0xF));
 		output += ('a'+((out[i]>>4)&0xF));
 	}
@@ -158,62 +177,206 @@ std::string hash_variable(std::string input) {
 
 using namespace AST;
 
-class Var_Rename : public Visitor {
+struct fn_scope {
+	std::string fname, fclass;
+	bool includes_file;
+	std::vector <std::string> formal_params, local_vars, seen_vars;
+};
+
+
+
+
+class Var_Rename_Base : public Visitor {
 public:
-	Var_Rename() {
+	Var_Rename_Base () {
+		curr_class.push_back("");
+		curr_function.push_back("");
+
 		fn_scope fs;
-		fs.fname = "_";
-		fstack.push_back(fs); // No fn, main scope
-	}
-	
-	void children_variable_name(VARIABLE_NAME* in) {
-		// DO RENAMING STUFF
-		fn_scope fs = fstack[0];
-		std::string vname = *(dynamic_cast<VARIABLE_NAME*>(in))->value;
-
-		// Check if the variable is a formal parameter of a function
-		bool ok = false;
-		for (unsigned int j = 0; j < fs.formal_params.size(); j++)
-			if (fs.formal_params[j] == vname) {
-				ok = true;
-				break;
-			}
-
-		if (ok) {
-			(dynamic_cast<VARIABLE_NAME*>(in))->value = new String(hash_variable(vname));
-		}
-		
-		// Send to parent
-		Visitor::children_variable_name(in);
+		fs.fname = "";
+		fs.fclass = "";
+		fs.includes_file = false;
+		fstack.push_back(fs);
 	}
 
-	// Rename formal parameters list
+	std::vector <fn_scope> getfstack() {
+		return fstack;
+	}
+
+	// Context tracking
+	// Track in which class and/or method definition we are
+	void children_class_def(Class_def* in) {
+		// Push current class definition
+		curr_class.push_back(*(dynamic_cast<CLASS_NAME*>(in->class_name))->value);
+
+		Visitor::children_class_def(in);
+
+		curr_class.pop_back();
+	}
+	// Track the current function
 	void children_method(Method* in) {
-		fn_scope fs;
+		std::string mn = *in->signature->method_name->value;
+		curr_function.push_back(mn);
 
-		// Add the formal parameter list to a list of renamable variables
+		Visitor::children_method(in);
+
+		curr_function.pop_back();
+	}
+
+private:
+	std::vector < std::string > curr_class, curr_function;
+
+protected:
+	std::vector <fn_scope> fstack;
+
+	std::string getCurrClass() const {
+		return curr_class.back();
+	}
+
+	fn_scope * getCurrScope() {
+		for (unsigned int i = 0; i < fstack.size(); i++) {
+			if (fstack[i].fname == curr_function.back() and 
+				fstack[i].fclass == curr_class.back()) 
+
+				return &fstack[i];
+		}
+		return NULL;
+	}
+};
+
+
+
+
+class Var_Rename_Explore : public Var_Rename_Base {
+public:
+	Var_Rename_Explore () {}
+
+	// Look for variable production
+	void children_assignment(Assignment* in) {
+		fn_scope * cs = getCurrScope();
+		if (cs != NULL) {
+			if (in->variable->variable_name->classid() == VARIABLE_NAME::ID) {
+				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in->variable->variable_name))->value;
+
+				// Add the variable to the "seen" list (if it isn't already)
+				bool inlist = false;
+				for (unsigned int i = 0; i < cs->seen_vars.size(); i++) {
+					if (cs->seen_vars[i] == varname) {
+						inlist = true;
+						break;
+					}
+				}
+				for (unsigned int i = 0; i < cs->local_vars.size(); i++) {
+					if (cs->local_vars[i] == varname) {
+						inlist = true;
+						break;
+					}
+				}
+				if (not inlist)
+					cs->local_vars.push_back(varname);
+			}
+		}
+
+		Var_Rename_Base::children_assignment(in);		
+	}
+
+	// Look for variable usage
+	void children_variable_name(VARIABLE_NAME* in) {
+		fn_scope * cs = getCurrScope();
+		if (cs != NULL) {
+			if (in->classid() == VARIABLE_NAME::ID) {
+				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in))->value;
+
+				// Add the variable to the "seen" list
+				bool alreadyseen = false;
+				for (unsigned int i = 0; i < cs->seen_vars.size(); i++) {
+					if (cs->seen_vars[i] == varname) {
+						alreadyseen = true;
+						break;
+					}
+				}
+				if (not alreadyseen) {
+					cs->seen_vars.push_back(varname);
+				}
+			}
+		}
+
+		Var_Rename_Base::children_variable_name(in);
+	}
+
+	// Look for "require", "include", "require_once" of "include_once"
+	void children_method_invocation(Method_invocation* in) {
+		fn_scope * fs = getCurrScope();
+		if (fs != NULL) {
+			std::string mname = *(dynamic_cast<METHOD_NAME*>(in->method_name))->value;
+			if (mname == "include" or mname == "include_once" or 
+				mname == "require" or mname == "require_once") {
+
+				fs->includes_file = true;
+			}
+		}
+
+		Var_Rename_Base::children_method_invocation(in);
+	}
+
+	// Add the functions to the function list with the formal parameters
+	void children_method(Method* in) {
+		std::string mn = *in->signature->method_name->value;
+
+		fn_scope fs;
+		fs.fname = mn;
+		fs.fclass = getCurrClass();
+		fs.includes_file = false;
+
 		List<Formal_parameter*> plist = *in->signature->formal_parameters;
-		fs.fname = *in->signature->method_name->value;
 		for (unsigned int i = 0; i < plist.size(); i++) {
 			fs.formal_params.push_back(*plist.at(i)->var->variable_name->value);
 		}
 
-		// Push fn name to fstack
 		fstack.push_back(fs);
 
-		Visitor::children_method(in);
+		Var_Rename_Base::children_method(in);
+	}
+};
 
-		// Pop fn name
-		fstack.pop_back();
+
+class Var_Rename : public Var_Rename_Base {
+public:
+	Var_Rename(std::vector <fn_scope> fstack) {
+		this->fstack = fstack;
 	}
 
-protected:
-	struct fn_scope {
-		std::string fname;
-		std::vector <std::string> formal_params;
-		std::vector <std::string> local_vars;
-	};
-	std::vector <fn_scope> fstack;
+	void children_variable_name(VARIABLE_NAME* in) {
+		fn_scope * cs = getCurrScope();
+		if (cs != NULL) {
+			if (in->classid() == VARIABLE_NAME::ID) {
+				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in))->value;
+
+				// Check wheter we can rename it
+				bool renamable = false;
+
+				for (unsigned int i = 0; i < cs->formal_params.size(); i++) {
+					if (cs->formal_params[i] == varname) {
+						renamable = true;
+						break;
+					}
+				}
+				for (unsigned int i = 0; i < cs->local_vars.size(); i++) {
+					if (cs->local_vars[i] == varname) {
+						renamable = true;
+						break;
+					}
+				}
+				if (cs->includes_file) renamable = false;
+
+				if (renamable) {
+					(dynamic_cast<VARIABLE_NAME*>(in))->value = new String(hash_variable(varname));
+				}
+			}
+		}
+
+		Var_Rename_Base::children_variable_name(in);
+	}
 };
 
 extern "C" void load (Pass_manager* pm, Plugin_pass* pass) {
@@ -221,6 +384,28 @@ extern "C" void load (Pass_manager* pm, Plugin_pass* pass) {
 }
 
 extern "C" void run_ast (PHP_script* in, Pass_manager* pm, String* option) {
-	in->visit (new Var_Rename ());
+	// Explore the PHP source
+	Var_Rename_Explore * explorer = new Var_Rename_Explore();
+	in->visit (explorer);
+
+	// Debug info
+	if (true) {
+		std::vector <fn_scope> fstack = explorer->getfstack();
+		for (unsigned int i = 0; i < fstack.size(); i++) {
+			std::cerr << " + " << fstack[i].fclass << "." << fstack[i].fname << " includes? " << 
+				fstack[i].includes_file << std::endl;
+			for (unsigned int j = 0; j < fstack[i].formal_params.size(); j++) {
+				std::cerr << "   * " << fstack[i].formal_params[j] << std::endl;
+			}
+			for (unsigned int j = 0; j < fstack[i].local_vars.size(); j++) {
+				std::cerr << "   - " << fstack[i].local_vars[j] << std::endl;
+			}
+
+			std::cerr << std::endl;
+		}
+	}
+
+	in->visit (new Var_Rename (explorer->getfstack()));
 }	
+
 
