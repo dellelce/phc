@@ -184,8 +184,6 @@ struct fn_scope {
 };
 
 
-
-
 class Var_Rename_Base : public Visitor {
 public:
 	Var_Rename_Base () {
@@ -242,6 +240,23 @@ protected:
 		}
 		return NULL;
 	}
+
+	static bool varInList(fn_scope * cs, std::string varname) {
+		bool inlist = false;
+		for (unsigned int i = 0; i < cs->seen_vars.size(); i++) {
+			if (cs->seen_vars[i] == varname) {
+				inlist = true;
+				break;
+			}
+		}
+		for (unsigned int i = 0; i < cs->local_vars.size(); i++) {
+			if (cs->local_vars[i] == varname) {
+				inlist = true;
+				break;
+			}
+		}
+		return inlist;
+	}
 };
 
 
@@ -258,26 +273,31 @@ public:
 			if (in->variable->variable_name->classid() == VARIABLE_NAME::ID) {
 				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in->variable->variable_name))->value;
 
-				// Add the variable to the "seen" list (if it isn't already)
-				bool inlist = false;
-				for (unsigned int i = 0; i < cs->seen_vars.size(); i++) {
-					if (cs->seen_vars[i] == varname) {
-						inlist = true;
-						break;
-					}
-				}
-				for (unsigned int i = 0; i < cs->local_vars.size(); i++) {
-					if (cs->local_vars[i] == varname) {
-						inlist = true;
-						break;
-					}
-				}
-				if (not inlist)
+				if (not Var_Rename_Base::varInList(cs,varname))
 					cs->local_vars.push_back(varname);
 			}
 		}
 
 		Var_Rename_Base::children_assignment(in);		
+	}
+
+	// Production occurs in foreach too
+	void children_foreach(Foreach* in) {
+		fn_scope * cs = getCurrScope();
+		if (cs != NULL) {
+			if (in->key) {
+				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in->key->variable_name))->value;
+				if (not Var_Rename_Base::varInList(cs,varname))
+					cs->local_vars.push_back(varname);
+			}
+			if (in->val) {
+				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in->val->variable_name))->value;
+				if (not Var_Rename_Base::varInList(cs,varname))
+					cs->local_vars.push_back(varname);
+			}
+		}
+
+		Var_Rename_Base::children_foreach(in);
 	}
 
 	// Look for variable usage
