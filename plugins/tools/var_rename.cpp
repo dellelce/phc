@@ -193,7 +193,7 @@ public:
 		fn_scope fs;
 		fs.fname = "";
 		fs.fclass = "";
-		fs.includes_file = false;
+		fs.includes_file = true;
 		fstack.push_back(fs);
 	}
 
@@ -273,7 +273,7 @@ public:
 			if (in->variable->variable_name->classid() == VARIABLE_NAME::ID) {
 				std::string varname = *(dynamic_cast<VARIABLE_NAME*>(in->variable->variable_name))->value;
 
-				if (not Var_Rename_Base::varInList(cs,varname))
+				if (not Var_Rename_Base::varInList(cs,varname) and in->variable->target == NULL)
 					cs->local_vars.push_back(varname);
 			}
 		}
