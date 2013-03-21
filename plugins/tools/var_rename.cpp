@@ -24,6 +24,7 @@
  *    + Solution: We can decide not to rename variables if there's an inclusion after
  *      their first assignment. This is difficult to model, as the inclusion occurs dinamically
  *      with the code flow.
+ * We should'n rename class attributes. It could be bad if the class is used in another file
  *
  */
 

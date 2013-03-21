@@ -288,6 +288,14 @@ plugins_tools_add_comment_la_LINK = $(LIBTOOL) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(plugins_tools_add_comment_la_LDFLAGS) $(LDFLAGS) -o $@
+plugins_tools_analysis_la_LIBADD =
+am_plugins_tools_analysis_la_OBJECTS = analysis.lo
+plugins_tools_analysis_la_OBJECTS =  \
+	$(am_plugins_tools_analysis_la_OBJECTS)
+plugins_tools_analysis_la_LINK = $(LIBTOOL) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(plugins_tools_analysis_la_LDFLAGS) $(LDFLAGS) -o $@
 plugins_tools_crypt_string_la_LIBADD =
 am_plugins_tools_crypt_string_la_OBJECTS = crypt_string.lo
 plugins_tools_crypt_string_la_OBJECTS =  \
@@ -502,6 +510,7 @@ SOURCES = $(libphc_la_SOURCES) \
 	$(plugins_tests_strip_includes_la_SOURCES) \
 	$(plugins_tools_C_unparser_la_SOURCES) \
 	$(plugins_tools_add_comment_la_SOURCES) \
+	$(plugins_tools_analysis_la_SOURCES) \
 	$(plugins_tools_crypt_string_la_SOURCES) \
 	$(plugins_tools_debug_zval_la_SOURCES) \
 	$(plugins_tools_demi_eval_la_SOURCES) \
@@ -536,6 +545,7 @@ DIST_SOURCES = $(libphc_la_SOURCES) \
 	$(plugins_tests_strip_includes_la_SOURCES) \
 	$(plugins_tools_C_unparser_la_SOURCES) \
 	$(plugins_tools_add_comment_la_SOURCES) \
+	$(plugins_tools_analysis_la_SOURCES) \
 	$(plugins_tools_crypt_string_la_SOURCES) \
 	$(plugins_tools_debug_zval_la_SOURCES) \
 	$(plugins_tools_demi_eval_la_SOURCES) \
@@ -1364,7 +1374,8 @@ nobase_pkglib_LTLIBRARIES = plugins/tests/canonical_unparser.la \
 	plugins/tools/reduce_statements.la plugins/tools/remove_all.la \
 	plugins/tools/replace_include_constants.la \
 	plugins/tools/test_ssi.la plugins/tools/crypt_string.la \
-	plugins/tools/var_rename.la plugins/tutorials/Comment_ifs.la \
+	plugins/tools/var_rename.la plugins/tools/analysis.la \
+	plugins/tutorials/Comment_ifs.la \
 	plugins/tutorials/count_statements_difficult.la \
 	plugins/tutorials/count_statements_easy.la \
 	plugins/tutorials/Expand_includes.la \
@@ -1420,6 +1431,8 @@ plugins_tools_crypt_string_la_SOURCES = plugins/tools/crypt_string.cpp
 plugins_tools_crypt_string_la_LDFLAGS = ${PLUGIN_LDFLAGS}
 plugins_tools_var_rename_la_SOURCES = plugins/tools/var_rename.cpp
 plugins_tools_var_rename_la_LDFLAGS = ${PLUGIN_LDFLAGS}
+plugins_tools_analysis_la_SOURCES = plugins/tools/analysis.cpp
+plugins_tools_analysis_la_LDFLAGS = ${PLUGIN_LDFLAGS}
 plugins_tutorials_Comment_ifs_la_SOURCES = plugins/tutorials/Comment_ifs.cpp
 plugins_tutorials_Comment_ifs_la_LDFLAGS = ${PLUGIN_LDFLAGS}
 plugins_tutorials_count_statements_difficult_la_SOURCES = plugins/tutorials/count_statements_difficult.cpp
@@ -1620,6 +1633,8 @@ plugins/tools/C_unparser.la: $(plugins_tools_C_unparser_la_OBJECTS) $(plugins_to
 	$(plugins_tools_C_unparser_la_LINK) -rpath $(pkglibdir)/plugins/tools $(plugins_tools_C_unparser_la_OBJECTS) $(plugins_tools_C_unparser_la_LIBADD) $(LIBS)
 plugins/tools/add_comment.la: $(plugins_tools_add_comment_la_OBJECTS) $(plugins_tools_add_comment_la_DEPENDENCIES) $(EXTRA_plugins_tools_add_comment_la_DEPENDENCIES) plugins/tools/$(am__dirstamp)
 	$(plugins_tools_add_comment_la_LINK) -rpath $(pkglibdir)/plugins/tools $(plugins_tools_add_comment_la_OBJECTS) $(plugins_tools_add_comment_la_LIBADD) $(LIBS)
+plugins/tools/analysis.la: $(plugins_tools_analysis_la_OBJECTS) $(plugins_tools_analysis_la_DEPENDENCIES) $(EXTRA_plugins_tools_analysis_la_DEPENDENCIES) plugins/tools/$(am__dirstamp)
+	$(plugins_tools_analysis_la_LINK) -rpath $(pkglibdir)/plugins/tools $(plugins_tools_analysis_la_OBJECTS) $(plugins_tools_analysis_la_LIBADD) $(LIBS)
 plugins/tools/crypt_string.la: $(plugins_tools_crypt_string_la_OBJECTS) $(plugins_tools_crypt_string_la_DEPENDENCIES) $(EXTRA_plugins_tools_crypt_string_la_DEPENDENCIES) plugins/tools/$(am__dirstamp)
 	$(plugins_tools_crypt_string_la_LINK) -rpath $(pkglibdir)/plugins/tools $(plugins_tools_crypt_string_la_OBJECTS) $(plugins_tools_crypt_string_la_LIBADD) $(LIBS)
 plugins/tools/debug_zval.la: $(plugins_tools_debug_zval_la_OBJECTS) $(plugins_tools_debug_zval_la_DEPENDENCIES) $(EXTRA_plugins_tools_debug_zval_la_DEPENDENCIES) plugins/tools/$(am__dirstamp)
@@ -1920,6 +1935,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XML_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XML_unparser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/add_comment.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/analysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/canonical_unparser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cloning.Plo@am__quote@
@@ -3063,6 +3079,13 @@ add_comment.lo: plugins/tools/add_comment.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='plugins/tools/add_comment.cpp' object='add_comment.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o add_comment.lo `test -f 'plugins/tools/add_comment.cpp' || echo '$(srcdir)/'`plugins/tools/add_comment.cpp
+
+analysis.lo: plugins/tools/analysis.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT analysis.lo -MD -MP -MF $(DEPDIR)/analysis.Tpo -c -o analysis.lo `test -f 'plugins/tools/analysis.cpp' || echo '$(srcdir)/'`plugins/tools/analysis.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/analysis.Tpo $(DEPDIR)/analysis.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='plugins/tools/analysis.cpp' object='analysis.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o analysis.lo `test -f 'plugins/tools/analysis.cpp' || echo '$(srcdir)/'`plugins/tools/analysis.cpp
 
 crypt_string.lo: plugins/tools/crypt_string.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT crypt_string.lo -MD -MP -MF $(DEPDIR)/crypt_string.Tpo -c -o crypt_string.lo `test -f 'plugins/tools/crypt_string.cpp' || echo '$(srcdir)/'`plugins/tools/crypt_string.cpp
