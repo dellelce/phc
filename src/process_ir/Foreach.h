@@ -10,7 +10,7 @@
 
 #include <boost/foreach.hpp>
 
-#define foreach BOOST_FOREACH
+#define foreach(x,y) BOOST_FOREACH(x,y)
 
 // No const.
 #define for_li(VAR, TYPE, ITER)										\

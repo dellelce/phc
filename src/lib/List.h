@@ -13,6 +13,7 @@
 #include "process_ir/Foreach.h"
 #include <boost/type_traits/is_pointer.hpp>
 #include <boost/type_traits/is_scalar.hpp>
+#include <stdlib.h> //abort
 
 // XXX HACK
 /*
